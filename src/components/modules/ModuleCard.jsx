@@ -1,19 +1,25 @@
 import { useState } from 'react';
-
-import ModuleItem from './ModuleItem';
+import SortableModuleItem from "./SortableModuleItem";
+import { closestCorners, DndContext } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSearchStore } from '../../store/useSearchStore';
 
 const ModuleCard = ({
   module,
   onEdit,
   onDelete,
   items = [],
+  setItems,
   onAddItem,
   onDeleteItem,
+  dragHandleProps,
+  setDroppableRef
 }) => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
+  const { filteredModules } = useSearchStore();
   const moduleItems = items.filter(item => item.moduleId === module.id);
 
   const toggleOptions = e => {
@@ -45,7 +51,70 @@ const ModuleCard = ({
     setIsAddMenuOpen(false);
   };
 
+  const getItemPos = (id) => items.findIndex( (item)=>item.id === id)
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const isOverThisModule = over.id === `module-droppable-${module.id}`;
+    const draggedItem = items.find((item) => item.id === active.id);
+
+    // Step 1: Handle drop from general -> into this module
+    if (isOverThisModule && draggedItem && draggedItem.moduleId !== module.id) {
+      setItems((items) =>
+        items.map((item) =>
+          item.id === active.id ? { ...item, moduleId: module.id } : item
+        )
+      );
+      return; // done
+    }
+
+    // Step 2: Handle reordering *within* this module
+    const moduleItemIds = items
+      .filter((item) => item.moduleId === module.id)
+      .map((item) => item.id);
+
+    const activeIndex = moduleItemIds.indexOf(active.id);
+    const overIndex = moduleItemIds.indexOf(over.id);
+
+    if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+      const newOrder = arrayMove(moduleItemIds, activeIndex, overIndex);
+
+      setItems((prevItems) => {
+        const reordered = [...prevItems];
+
+        // Get just this module's items
+        const thisModuleItems = reordered.filter((item) => item.moduleId === module.id);
+
+        // Apply new order within this module
+        const reorderedModuleItems = thisModuleItems.sort(
+          (a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id)
+        );
+
+        let j = 0;
+        return reordered.map((item) => {
+          if (item.moduleId === module.id) {
+            return reorderedModuleItems[j++];
+          }
+          return item;
+        });
+      });
+
+      return;
+    }
+  };
+
   return (
+    <DndContext
+    collisionDetection={closestCorners}
+    onDragEnd={handleDragEnd}
+    >
+    <div className='module-wrapper'>
+    <div className="drag-handle" {...dragHandleProps}>
+      ⠿ 
+    </div>
     <div className="module-card-container">
       <div className="module-card" onClick={toggleExpanded}>
         <div className="module-content">
@@ -80,7 +149,7 @@ const ModuleCard = ({
         </div>
       </div>
       {isExpanded && (
-        <div className="module-content-expanded">
+        <div className="module-content-expanded" ref={setDroppableRef}>
           {moduleItems.length === 0 ? (
             <div className="empty-module-content">
               <p className="empty-module-message">
@@ -111,11 +180,16 @@ const ModuleCard = ({
               </div>
             </div>
           ) : (
+            <SortableContext
+            key={moduleItems.map(item => item.id).join('-')}
+            items={moduleItems.map(item => item.id)}
+            strategy={verticalListSortingStrategy}>
             <div className="module-items">
               <div className="module-items-list">
                 {moduleItems.map(item => (
-                  <ModuleItem
+                  <SortableModuleItem
                     key={item.id}
+                    id={item.id}
                     item={item}
                     onDelete={onDeleteItem}
                   />
@@ -145,10 +219,13 @@ const ModuleCard = ({
                 )}
               </div>
             </div>
+            </SortableContext>
           )}
         </div>
       )}
     </div>
+    </div>
+    </DndContext>
   );
 };
 

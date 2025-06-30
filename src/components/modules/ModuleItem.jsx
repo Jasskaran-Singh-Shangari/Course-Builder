@@ -1,4 +1,8 @@
-const ModuleItem = ({ item, onDelete }) => {
+const ModuleItem = ({ 
+  item, 
+  onDelete,
+  dragHandleProps
+  }) => {
   // Render different UI based on item type
 
   const handleDelete = e => {
@@ -8,6 +12,10 @@ const ModuleItem = ({ item, onDelete }) => {
 
   if (item.type === 'link') {
     return (
+    <div className='module-wrapper'>
+      <div className="drag-handle" {...dragHandleProps}>
+        ⠿ 
+      </div>
       <div className="module-item link-item">
         <div className="item-content">
           <div className="item-icon">
@@ -29,11 +37,16 @@ const ModuleItem = ({ item, onDelete }) => {
           <span className="delete-icon">🗑️</span>
         </button>
       </div>
+      </div>
     );
   }
 
   if (item.type === 'file') {
     return (
+    <div className='module-wrapper'>
+      <div className="drag-handle" {...dragHandleProps}>
+        ⠿ 
+      </div>
       <div className="module-item file-item">
         <div className="item-content">
           <div className="item-icon">
@@ -49,6 +62,7 @@ const ModuleItem = ({ item, onDelete }) => {
         <button className="item-delete" onClick={handleDelete}>
           <span className="delete-icon">🗑️</span>
         </button>
+      </div>
       </div>
     );
   }

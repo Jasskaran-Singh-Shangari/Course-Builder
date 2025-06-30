@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSearchStore } from '../../store/useSearchStore';
 
 const Header = ({ onAddClick }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const {searchTerm, setSearchTerm} = useSearchStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -28,10 +30,12 @@ const Header = ({ onAddClick }) => {
   };
 
   const handleAddLink = () => {
+    onAddClick('link')
     setIsDropdownOpen(false);
   };
 
   const handleUpload = () => {
+    onAddClick('file')
     setIsDropdownOpen(false);
   };
 
@@ -40,11 +44,16 @@ const Header = ({ onAddClick }) => {
       <h1 className="header-title">Course builder</h1>
       <div className="header-right">
         <div className="search-container">
-          <input type="text" placeholder="Search..." className="search-input" />
+          <input type="text" 
+          placeholder="Search..." 
+          value={searchTerm}
+          onChange={(e)=>setSearchTerm(e.target.value)}
+          className="search-input"
+           />
         </div>
         <div className="dropdown-container" ref={dropdownRef}>
           <button className="add-button" onClick={handleAddClick}>
-            Add
+            Add +
           </button>
           {isDropdownOpen && (
             <div className="dropdown-menu">
